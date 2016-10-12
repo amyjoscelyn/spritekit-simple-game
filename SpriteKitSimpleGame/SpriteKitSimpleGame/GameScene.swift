@@ -3,108 +3,60 @@
 //  SpriteKitSimpleGame
 //
 //  Created by Amy Joscelyn on 10/12/16.
-//  Copyright © 2016 Amy Joscelyn. All rights reserved.
+//  Copyright © 2016 Amy Joscelyn. All rigxhts reserved.
 //
 
 import SpriteKit
 import GameplayKit
 
-class GameScene: SKScene {
+class GameScene: SKScene
+{
+    let player = SKSpriteNode(imageNamed: "player")
     
-    var entities = [GKEntity]()
-    var graphs = [String : GKGraph]()
-    
-    private var lastUpdateTime : TimeInterval = 0
-    private var label : SKLabelNode?
-    private var spinnyNode : SKShapeNode?
-    
-    override func sceneDidLoad() {
-
-        self.lastUpdateTime = 0
+    override func didMove(to view: SKView)
+    {
+        backgroundColor = SKColor.white
+        player.position = CGPoint(x: size.width * 0.1, y: size.height * 0.5)
+        addChild(player)
         
-        // Get label node from scene and store it for use later
-        self.label = self.childNode(withName: "//helloLabel") as? SKLabelNode
-        if let label = self.label {
-            label.alpha = 0.0
-            label.run(SKAction.fadeIn(withDuration: 2.0))
-        }
-        
-        // Create shape node to use during mouse interaction
-        let w = (self.size.width + self.size.height) * 0.05
-        self.spinnyNode = SKShapeNode.init(rectOf: CGSize.init(width: w, height: w), cornerRadius: w * 0.3)
-        
-        if let spinnyNode = self.spinnyNode {
-            spinnyNode.lineWidth = 2.5
-            
-            spinnyNode.run(SKAction.repeatForever(SKAction.rotate(byAngle: CGFloat(M_PI), duration: 1)))
-            spinnyNode.run(SKAction.sequence([SKAction.wait(forDuration: 0.5),
-                                              SKAction.fadeOut(withDuration: 0.5),
-                                              SKAction.removeFromParent()]))
-        }
+        run(SKAction.repeatForever(
+           SKAction.sequence([
+                SKAction.run(addMonster),
+                SKAction.wait(forDuration: 1.0)
+            ])
+        ))
     }
     
-    
-    func touchDown(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.green
-            self.addChild(n)
-        }
+    func random() -> CGFloat
+    {
+        return CGFloat(Float(arc4random()) / 0xFFFFFFFF)
     }
     
-    func touchMoved(toPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.blue
-            self.addChild(n)
-        }
+    func random(min: CGFloat, max: CGFloat) -> CGFloat
+    {
+        return random() * (max - min) + min
     }
     
-    func touchUp(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.red
-            self.addChild(n)
-        }
-    }
-    
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if let label = self.label {
-            label.run(SKAction.init(named: "Pulse")!, withKey: "fadeInOut")
-        }
+    func addMonster()
+    {
+        // Create sprite
+        let monster = SKSpriteNode(imageNamed: "monster")
         
-        for t in touches { self.touchDown(atPoint: t.location(in: self)) }
-    }
-    
-    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchMoved(toPoint: t.location(in: self)) }
-    }
-    
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchUp(atPoint: t.location(in: self)) }
-    }
-    
-    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchUp(atPoint: t.location(in: self)) }
-    }
-    
-    
-    override func update(_ currentTime: TimeInterval) {
-        // Called before each frame is rendered
+        // Determine where to spawn the monster along the Y axis
+        let actualY = random(min: monster.size.height / 2, max: size.height - monster.size.height / 2)
         
-        // Initialize _lastUpdateTime if it has not already been
-        if (self.lastUpdateTime == 0) {
-            self.lastUpdateTime = currentTime
-        }
+        // Position the monster slightly off-screen along the right edge, and along a random position along the Y axis as calculated above
+        monster.position = CGPoint(x: size.width + monster.size.width / 2, y: actualY)
         
-        // Calculate time since last update
-        let dt = currentTime - self.lastUpdateTime
+        // Add the monster to the scene
+        addChild(monster)
         
-        // Update entities
-        for entity in self.entities {
-            entity.update(deltaTime: dt)
-        }
+        // Determine speed of the monster
+        let actualDuration = random(min: CGFloat(2.0), max: CGFloat(4.0))
         
-        self.lastUpdateTime = currentTime
+        // Create the actions
+        let actionMove = SKAction.move(to: CGPoint(x: -monster.size.width / 2, y: actualY), duration: TimeInterval(actualDuration))
+        let actualMoveDone = SKAction.removeFromParent()
+        monster.run(SKAction.sequence([actionMove, actualMoveDone]))
     }
 }
